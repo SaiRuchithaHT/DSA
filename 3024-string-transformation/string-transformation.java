@@ -1,40 +1,78 @@
-class StringAlgorithm {
-    public List<Integer> kmp(String s, String t) {
-        int m = s.length(), n = t.length();
-        int []pi = new int[n];
-        for (int i = 1; i < n; ++i) {
-            int j = pi[i-1];
-            while (j > 0 && t.charAt(j) != t.charAt(i)) j = pi[j - 1];
-            if (j == 0 && t.charAt(0) != t.charAt(i)) pi[i] = 0;
-            else pi[i] = j + 1;
+import java.util.*;
+
+class StringMatcher {
+    public List<Integer> kmpSearch(String text, String pattern) {
+        int textLength = text.length(), patternLength = pattern.length();
+        int[] prefixTable = new int[patternLength];
+
+        // Build the prefix table
+        for (int i = 1; i < patternLength; ++i) {
+            int j = prefixTable[i - 1];
+            while (j > 0 && pattern.charAt(j) != pattern.charAt(i)) {
+                j = prefixTable[j - 1];
+            }
+            if (pattern.charAt(j) == pattern.charAt(i)) {
+                prefixTable[i] = j + 1;
+            } else {
+                prefixTable[i] = 0;
+            }
         }
-        int j = 0;
-        List<Integer> res = new ArrayList<>();
-        for (int i = 0; i < m; ++i) {
-            while (j >= n || (j > 0 && s.charAt(i) != t.charAt(j))) j = pi[j - 1];
-            if (s.charAt(i) == t.charAt(j)) j++;
-            if (j == n) res.add(i-n+1);
+
+        int matchIndex = 0;
+        List<Integer> result = new ArrayList<>();
+        
+        // Perform KMP search
+        for (int i = 0; i < textLength; ++i) {
+            while (matchIndex > 0 && text.charAt(i) != pattern.charAt(matchIndex)) {
+                matchIndex = prefixTable[matchIndex - 1];
+            }
+            if (text.charAt(i) == pattern.charAt(matchIndex)) {
+                matchIndex++;
+            }
+            if (matchIndex == patternLength) {
+                result.add(i - patternLength + 1);
+                matchIndex = prefixTable[matchIndex - 1];
+            }
         }
-        return res;
+
+        return result;
     }
 }
+
 class Solution {
-    public long pow(long a, long b, int M) {
-        if (b == 0) return 1;
-        if ((b & 1) == 0) return pow(a * a % M, b >> 1, M);
-        return a * pow(a * a % M, b >> 1, M) % M;
-    }
-    public int numberOfWays(String s, String t, long k) {
-        int n = s.length(), M = 1000000007;
-        List<Integer> pos = new StringAlgorithm().kmp(s + s.substring(0, n-1), t);
-        long []f_k = {0, 0};
-        f_k[1] = (pow(n-1, k, M) + (k % 2 * 2 - 1) + M) % M * pow(n, M-2, M) % M;
-        f_k[0] = (f_k[1] - (k % 2 * 2 - 1) + M) % M;
-        int res = 0;
-        for (Integer p: pos) {
-            if (p == 0) res = (res + (int)f_k[0]) % M;
-            else res = (res + (int)f_k[1]) % M;
+    private long modularExponentiation(long base, long exponent, int modulus) {
+        if (exponent == 0) return 1;
+        if ((exponent & 1) == 0) {
+            long half = modularExponentiation((base * base) % modulus, exponent >> 1, modulus);
+            return half;
         }
-        return res;
+        return (base * modularExponentiation((base * base) % modulus, exponent >> 1, modulus)) % modulus;
+    }
+
+    public int numberOfWays(String source, String target, long shifts) {
+        int length = source.length();
+        int MOD = 1_000_000_007;
+
+        // Find cyclic shift positions using KMP
+        List<Integer> positions = new StringMatcher().kmpSearch(source + source.substring(0, length - 1), target);
+        long[] shiftWays = {0, 0};
+
+        // Calculate ways for shifts
+        shiftWays[1] = ((modularExponentiation(length - 1, shifts, MOD) + ((shifts % 2 == 0 ? -1 : 1) + MOD)) % MOD
+                * modularExponentiation(length, MOD - 2, MOD)) % MOD;
+        shiftWays[0] = (shiftWays[1] - (shifts % 2 == 0 ? -1 : 1) + MOD) % MOD;
+
+        int result = 0;
+
+        // Aggregate results
+        for (Integer position : positions) {
+            if (position == 0) {
+                result = (result + (int) shiftWays[0]) % MOD;
+            } else {
+                result = (result + (int) shiftWays[1]) % MOD;
+            }
+        }
+
+        return result;
     }
 }
