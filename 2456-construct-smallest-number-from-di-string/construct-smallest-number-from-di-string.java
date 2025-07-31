@@ -1,6 +1,6 @@
 class Solution {
     public String smallestNumber(String pattern) {
-        List<Integer> list = new ArrayList<>();
+        List<Integer> list = new LinkedList<>();
         list.add(1);
         for(int i=0, j=2, k=0; i<pattern.length(); i++, j++){
             if(pattern.charAt(i)=='I'){
